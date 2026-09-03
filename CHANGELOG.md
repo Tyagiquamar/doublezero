@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 ### Changes
 
 
+- Device Health Oracle
+  - Links now move both ways between `ReadyForService` and `Impaired`, driven by the lake `link_rollup_5m` table. Until now the oracle had no link criteria at all, so every link auto-advanced to `ReadyForService` and stayed there with no demotion path. A link is impaired when its latest 5-minute bucket shows the ISIS adjacency down or per-direction loss above `--link-loss-threshold` (default 5%); it recovers only after a fully covered, recent window of clean buckets, reusing the `--drained-slot-count` dwell. Fast to demote, slow to recover, so borderline links do not flap. This is a reporting signal — `link.status` is not gated on `LinkHealth`.
+  - Neither a ClickHouse outage nor missing telemetry moves a link's health in either direction: an unreachable lake would otherwise demote every healthy link on the network in one tick. Query failures are counted under `doublezero_device_health_oracle_errors_total{error_type="link_health_query"}` so an outage is visible without reading as impairment.
 - SDK
   - The TypeScript and Python `GlobalState` deserializers expose `ip_verifier_authority_pk`, the RFC-27 trust root the Go SDK and the Rust state already carried, so those consumers can read which key signs IP ownership proofs. The field is appended, so an account written before the upgrade decodes it as the default pubkey rather than failing. (#4231)
 - CI
